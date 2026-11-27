@@ -58,7 +58,10 @@ flowchart LR
 
 ## Notebooks
 
-Run them in order. Each one opens in Google Colab with the badge (choose a **T4 GPU** runtime for notebook 04).
+**Quickest way to reproduce everything:** open [`00_run_all.ipynb`](notebooks/00_run_all.ipynb) in Colab
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Souhaila-DJAFFAL/longtail-recsys/blob/main/notebooks/00_run_all.ipynb),
+choose a **T4 GPU** runtime and *Run all*. It executes notebooks 01 → 05 in one session (about 15–25 minutes)
+and saves them with their outputs. Locally, run the notebooks in order in one Jupyter server.
 
 | # | Notebook | What it does | |
 |---|---|---|---|
@@ -124,6 +127,7 @@ RECSYS_DATASET=synthetic RECSYS_QUICK=1 jupyter lab notebooks/
 ```
 longtail-recsys/
 ├── notebooks/
+│   ├── 00_run_all.ipynb               # runs 01 → 05 in one Colab session
 │   ├── 01_data_preparation_and_eda.ipynb
 │   ├── 02_models.ipynb
 │   ├── 03_evaluation_metrics.ipynb
