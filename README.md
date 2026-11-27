@@ -79,8 +79,57 @@ definition lives in exactly one place.
 ## Results
 
 <!-- RESULTS:START -->
-> Results on MovieLens-1M are produced by notebooks 01 → 05 and saved to [`results/`](results/).
-> This section is filled in from `results/results_ml-1m.md` after the run.
+MovieLens-1M after 5-core filtering: 6,040 users, 3,416 items. Test set = each user's last interaction;
+full ranking over all items; K = 10. Single run, seed 42, trained on a Colab T4 GPU.
+
+### The data is long-tailed
+
+The 20% most popular items receive **63%** of training interactions, and for **42%** of users the next
+item they actually watched is a long-tail item.
+
+![Long-tail structure of MovieLens-1M](results/eda_long_tail.png)
+
+### Model comparison
+
+| Model | HR@10 | NDCG@10 | NDCG@10 (head targets) | NDCG@10 (tail targets) | Coverage@10 | Tail share@10 |
+|:--|--:|--:|--:|--:|--:|--:|
+| Popularity | 0.0369 | 0.0180 | 0.0309 | 0.0000 | 5.8% | 0.0% |
+| BPR-MF | 0.0801 | 0.0399 | 0.0616 | 0.0095 | 56.0% | 11.2% |
+| **SASRec** | **0.2459** | **0.1315** | **0.1739** | **0.0721** | **69.6%** | **27.8%** |
+
+![Accuracy by target popularity and long-tail exposure](results/head_vs_tail.png)
+
+### Accuracy vs. long-tail exposure under re-ranking
+
+![Trade-off curves](results/tradeoff.png)
+
+| SASRec, λ | NDCG@10 | NDCG@10 (tail targets) | Coverage@10 | Tail share@10 |
+|:--|--:|--:|--:|--:|
+| 0 (no re-ranking) | 0.1315 | 0.0721 | 69.6% | 27.8% |
+| 0.1 | 0.1259 (−4.3%) | 0.0819 (+13.6%) | 77.3% | 35.5% |
+| 0.25 | 0.1112 (−15.4%) | 0.0904 (+25.4%) | 88.1% | 51.1% |
+| 0.5 | 0.0604 | 0.0756 | 93.6% | 83.2% |
+| 1.0 | 0.0094 | 0.0223 | 44.8% | 100.0% |
+
+Full tables: [`results/results_ml-1m.md`](results/results_ml-1m.md) · learning curves: [`results/learning_curves.png`](results/learning_curves.png)
+
+### Key findings
+
+1. **Sequence order matters.** SASRec more than triples BPR-MF's NDCG@10 (0.1315 vs. 0.0399) and is
+   7× better than the popularity baseline, showing that recent viewing order carries strong signal on MovieLens.
+2. **The sequential model is also the less biased one.** SASRec's largest relative gain is for users whose
+   next item is in the long tail (NDCG@10 0.0721 vs. 0.0095, ~7.6×, compared with ~2.8× for head-item
+   targets). It also recommends 2.5× more tail items and covers more of the catalogue than BPR-MF.
+3. **A small amount of re-ranking is close to free.** At λ = 0.1, SASRec gives up 4.3% NDCG@10 but
+   improves accuracy for tail-item users by 13.6% and raises catalogue coverage from 69.6% to 77.3%.
+   For BPR-MF, λ = 0.1 even slightly improves NDCG@10 (0.0399 → 0.0403).
+4. **Over-correction backfires.** Beyond λ ≈ 0.5, the popularity penalty dominates the model's scores:
+   tail share approaches 100% but coverage *falls* (to 44.8% at λ = 1) because every user receives
+   the same set of obscure items, and accuracy collapses for head and tail users alike.
+
+**Takeaway for a production platform:** choose a sequential model first, then a mild re-ranking strength
+(λ ≈ 0.1–0.25) as a tunable lever, and validate it online (A/B test) with engagement and
+catalogue-exposure metrics side by side.
 <!-- RESULTS:END -->
 
 ---
